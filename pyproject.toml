@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vcf-contact-merger"
-version = "1.0.0"
+dynamic = ["version"]
 description = "A utility to merge and deduplicate VCF contact files"
 readme = "README.md"
 license = {text = "MIT"}
@@ -71,6 +71,9 @@ vcf-merger = "merge_script:main"
 [tool.setuptools]
 # For flat structure, use py-modules instead of packages.find
 py-modules = ["merge_script"]
+
+[tool.setuptools.dynamic]
+version = {attr = "merge_script.__version__"}
 
 [tool.black]
 line-length = 88
