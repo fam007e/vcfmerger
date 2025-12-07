@@ -9,10 +9,10 @@ description = "A utility to merge and deduplicate VCF contact files"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
-    {name = "Faisal Ahmed Moshiur", email = "19180457+fam007e@users.noreply.github.com"}
+    {name = "Faisal Ahmed Moshiur", email = "faisalmoshiur+vcfmerger@gmail.com"}
 ]
 maintainers = [
-    {name = "Faisal Ahmed Moshiur", email = "19180457+fam007e@users.noreply.github.com"}
+    {name = "Faisal Ahmed Moshiur", email = "faisalmoshiur+vcfmerger@gmail.com"}
 ]
 keywords = ["vcf", "vcard", "contacts", "merge", "deduplicate", "backup", "phonebook", "addressbook"]
 classifiers = [
@@ -50,6 +50,7 @@ dev = [
     "pytest-cov>=2.0.0",
     "mypy>=0.800",
     "ruff>=0.1.0",
+    "build>=1.0.0",
 ]
 test = [
     "pytest>=6.0.0",

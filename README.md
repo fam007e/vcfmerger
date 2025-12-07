@@ -218,25 +218,14 @@ VCFmerger/
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+Contributions are welcome! We value your input and want to make contributing to this project as easy and transparent as possible.
 
-### Guidelines
+Please read our [Contributing Guidelines](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
 
-1. **Code Quality**: Maintain the 10/10 pylint score
-2. **Type Hints**: Add type hints for all functions and methods
-3. **Documentation**: Include docstrings and update README if needed
-4. **Tests**: Add tests for new functionality
-5. **Compatibility**: Ensure Python 3.6+ compatibility
+### Community Standards
 
-### Development Workflow
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests and quality checks
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+- **Code of Conduct**: We are committed to providing a friendly, safe and welcoming environment for all. Please read and respect our [Code of Conduct](CODE_OF_CONDUCT.md).
+- **Security**: If you discover a security vulnerability, please see our [Security Policy](SECURITY.md) for reporting instructions.
 
 ## Troubleshooting
 
@@ -255,7 +244,7 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 
 - **Issues**: Report bugs and request features on [GitHub Issues](https://github.com/fam007e/VCFmerger/issues)
 - **Discussions**: Join discussions on [GitHub Discussions](https://github.com/fam007e/VCFmerger/discussions)
-- **Email**: Contact the maintainer at [19180457+fam007e@users.noreply.github.com](mailto:19180457+fam007e@users.noreply.github.com)
+- **Email**: Contact the maintainer at [vcfmerger mail](mailto:faisalmoshiur+vcfmerger@gmail.com)
 
 ## Changelog
 
@@ -283,7 +272,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Faisal Ahmed Moshiur**
 - GitHub: [@fam007e](https://github.com/fam007e)
-- Email: [19180457+fam007e@users.noreply.github.com](mailto:19180457+fam007e@users.noreply.github.com)
+- Email: [vcfmerger mail](mailto:faisalmoshiur+vcfmerger@gmail.com)
 
 ---
 

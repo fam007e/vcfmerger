@@ -11,8 +11,16 @@ while multi-value fields are combined.
 
 import re
 import sys
+import argparse
+import logging
 import quopri
 from typing import Dict, List, Tuple, Any
+
+__version__ = "1.0.0"
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(message)s')
+logger = logging.getLogger(__name__)
 
 
 class VCFMerger:
@@ -247,11 +255,11 @@ class VCFMerger:
             Merged VCF content as a string
         """
         self.merged_contacts_data = {}
-        print("\n--- Starting VCF Merge Process ---")
+        logger.info("\n--- Starting VCF Merge Process ---")
 
         for i, vcf_content in enumerate(vcf_contents_list):
             file_info = f"Processing input file {i+1}/{len(vcf_contents_list)}"
-            print(f"\n[INFO] {file_info}...")
+            logger.info("\n[INFO] %s...", file_info)
             pattern = r'BEGIN:VCARD.*?END:VCARD'
             vcard_blocks = re.findall(pattern, vcf_content, re.DOTALL)
 
@@ -262,20 +270,20 @@ class VCFMerger:
 
                 if contact_key not in self.merged_contacts_data:
                     self.merged_contacts_data[contact_key] = current_contact_props
-                    print(f"  [INFO] Added new contact: '{contact_name}'.")
+                    logger.info("  [INFO] Added new contact: '%s'.", contact_name)
                 else:
                     existing_contact_props = self.merged_contacts_data[contact_key]
 
-                    print(f"  [DUPLICATE DETECTED] Contact '{contact_name}' found. "
-                          "Merging properties.")
+                    logger.info("  [DUPLICATE DETECTED] Contact '%s' found. "
+                                "Merging properties.", contact_name)
 
                     self._merge_contact_properties(existing_contact_props,
                                                   current_contact_props)
 
-                    print(f"  [MERGED] Properties for '{contact_name}' "
-                          "have been combined.")
+                    logger.info("  [MERGED] Properties for '%s' have been combined.",
+                                contact_name)
 
-        print("\n--- VCF Merge Process Complete ---")
+        logger.info("\n--- VCF Merge Process Complete ---")
 
         final_vcf_output = []
         for contact_key in sorted(self.merged_contacts_data.keys()):
@@ -315,9 +323,10 @@ def read_vcf_files(file_paths: List[str]) -> List[str]:
             with open(path, 'r', encoding='utf-8', errors='ignore') as file:
                 vcf_contents.append(file.read())
         except FileNotFoundError:
-            print(f"Error: Input file '{path}' not found. Skipping this file.")
+            logger.error("Error: Input file '%s' not found. Skipping this file.", path)
         except IOError as error:
-            print(f"Error reading file '{path}': {error}. Skipping this file.")
+            logger.error("Error reading file '%s': %s. "
+                         "Skipping this file.", path, error)
 
     return vcf_contents
 
@@ -336,31 +345,56 @@ def write_output_file(output_path: str, content: str) -> bool:
     try:
         with open(output_path, 'w', encoding='utf-8') as file:
             file.write(content)
-        print(f"\nSuccessfully merged contacts into '{output_path}'")
+        logger.info("\nSuccessfully merged contacts into '%s'", output_path)
         return True
     except IOError as error:
-        print(f"An IOError occurred while writing the output file: {error}")
+        logger.error("An IOError occurred while writing the output file: %s", error)
         return False
     except Exception as error:  # pylint: disable=broad-except
-        print(f"An unexpected error occurred while writing the output file: {error}")
+        logger.error("An unexpected error occurred while writing the output file: %s",
+                     error)
         return False
 
 
 def main() -> None:
     """Main function to handle command line arguments and execute merge."""
-    if len(sys.argv) < 3:
-        usage = "Usage: python3 merge_script.py <output.vcf> <input1.vcf> [...]"
-        print(usage)
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        description="Merge and deduplicate VCF contact files."
+    )
 
-    output_file_path = sys.argv[1]
-    input_file_paths = sys.argv[2:]
+    parser.add_argument(
+        "output_file",
+        help="Path to the output VCF file"
+    )
+    parser.add_argument(
+        "input_files",
+        nargs="+",
+        help="Paths to input VCF files"
+    )
+    parser.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose output"
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}"
+    )
+
+    args = parser.parse_args()
+
+    # Configure logging based on verbose flag
+    if args.verbose:
+        logger.setLevel(logging.INFO)
+    else:
+        logger.setLevel(logging.WARNING)
 
     # Read input files
-    vcf_contents = read_vcf_files(input_file_paths)
+    vcf_contents = read_vcf_files(args.input_files)
 
     if not vcf_contents:
-        print("No valid input VCF files found to merge. Exiting.")
+        logger.error("No valid input VCF files found to merge. Exiting.")
         sys.exit(1)
 
     # Merge VCF files
@@ -368,7 +402,7 @@ def main() -> None:
     merged_data_output = merger.merge_vcfs(vcf_contents)
 
     # Write output file
-    if not write_output_file(output_file_path, merged_data_output):
+    if not write_output_file(args.output_file, merged_data_output):
         sys.exit(1)
 
 

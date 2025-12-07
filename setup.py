@@ -57,7 +57,7 @@ setup(
     name='vcf-contact-merger',
     version=get_version(),
     author='Faisal Ahmed Moshiur',
-    author_email='19180457+fam007e@users.noreply.github.com',
+    author_email='faisalmoshiur+vcfmerger@gmail.com',
     description='A utility to merge and deduplicate VCF contact files',
     long_description=read_long_description(),
     long_description_content_type='text/markdown',

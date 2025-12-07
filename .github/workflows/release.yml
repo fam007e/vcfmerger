@@ -1,4 +1,4 @@
-name: Build and Release Binaries
+name: Release
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
       - 'v*'
 
 jobs:
-  build:
-    name: Build for ${{ matrix.os }}
+  build-binaries:
+    name: Build Binary for ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -21,7 +21,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.8'  # Use a stable version compatible with Python 3.6+
+        python-version: '3.8'
 
     - name: Install dependencies
       run: |
@@ -30,18 +30,18 @@ jobs:
 
     - name: Determine binary name
       id: binary_name
+      shell: bash
       run: |
         if [ "${{ matrix.os }}" == "windows-latest" ]; then
-          echo "binary_name=vcf-merger.exe" >> $GITHUB_OUTPUT
+          echo "name=vcf-merger.exe" >> $GITHUB_OUTPUT
         else
-          echo "binary_name=vcf-merger" >> $GITHUB_OUTPUT
+          echo "name=vcf-merger" >> $GITHUB_OUTPUT
         fi
-      shell: bash
 
     - name: Build binary with PyInstaller
       shell: bash
       run: |
-        pyinstaller --name ${{ steps.binary_name.outputs.binary_name }} \
+        pyinstaller --name ${{ steps.binary_name.outputs.name }} \
                     --onefile \
                     --console \
                     merge_script.py
@@ -49,72 +49,68 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ matrix.os }}-binary
-        path: dist/${{ steps.binary_name.outputs.binary_name }}
-        if-no-files-found: error
+        name: binary-${{ matrix.os }}
+        path: dist/${{ steps.binary_name.outputs.name }}
 
-  release:
-    name: Create GitHub Release
-    needs: build
+  build-package:
+    name: Build Python Package
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.8'
+    - name: Install build tools
+      run: pip install build
+    - name: Build package
+      run: python -m build
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist
+        path: dist/
 
+  publish-pypi:
+    name: Publish to PyPI
+    needs: build-package
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/vcf-contact-merger
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+    steps:
     - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
-        path: artifacts
+        name: dist
+        path: dist/
+    - name: Publish distribution 📦 to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
 
-    - name: Generate dynamic version
-      id: version
-      run: |
-        DATE=$(date +%Y%m%d)
-        COMMIT_HASH=$(git rev-parse --short=7 HEAD)
-        VERSION="v${DATE}-${COMMIT_HASH}"
-        echo "version=${VERSION}" >> $GITHUB_OUTPUT
-      shell: bash
+  create-release:
+    name: Create GitHub Release
+    needs: [build-binaries, build-package]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
 
     - name: Create Release
       id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ github.ref_name }}
-        release_name: Release ${{ steps.version.outputs.version }}
+        name: Release ${{ github.ref_name }}
         draft: false
         prerelease: false
-
-    - name: Upload Linux Binary
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/ubuntu-latest-binary/vcf-merger
-        asset_name: vcf-merger-linux-${{ steps.version.outputs.version }}
-        asset_content_type: application/octet-stream
-
-    - name: Upload macOS Binary
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/macos-latest-binary/vcf-merger
-        asset_name: vcf-merger-macos-${{ steps.version.outputs.version }}
-        asset_content_type: application/octet-stream
-
-    - name: Upload Windows Binary
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/windows-latest-binary/vcf-merger.exe
-        asset_name: vcf-merger-windows-${{ steps.version.outputs.version }}.exe
-        asset_content_type: application/octet-stream
+        generate_release_notes: true
+        files: |
+          binary-ubuntu-latest/vcf-merger
+          binary-macos-latest/vcf-merger
+          binary-windows-latest/vcf-merger.exe
+          dist/*
