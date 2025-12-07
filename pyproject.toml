@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=45", "wheel"]
+requires = ["setuptools>=45", "wheel", "setuptools_scm>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -72,8 +72,8 @@ vcf-merger = "merge_script:main"
 # For flat structure, use py-modules instead of packages.find
 py-modules = ["merge_script"]
 
-[tool.setuptools.dynamic]
-version = {attr = "merge_script.__version__"}
+[tool.setuptools_scm]
+write_to = "_version.py"
 
 [tool.black]
 line-length = 88

@@ -16,7 +16,16 @@ import logging
 import quopri
 from typing import Dict, List, Tuple, Any
 
-__version__ = "1.0.0"
+# Try to get version from installed package, otherwise fallback
+if sys.version_info >= (3, 8):
+    from importlib import metadata
+else:
+    import importlib_metadata as metadata
+
+try:
+    __version__ = metadata.version("vcf-merger")
+except metadata.PackageNotFoundError:
+    __version__ = "0.0.0-dev"
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(message)s')
