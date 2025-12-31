@@ -9,18 +9,15 @@ Properties from later-processed files are prioritized for single-value fields,
 while multi-value fields are combined.
 """
 
-import re
-import sys
 import argparse
 import logging
 import quopri
-from typing import Dict, List, Tuple, Any
+import re
+import sys
 
 # Try to get version from installed package, otherwise fallback
-if sys.version_info >= (3, 8):
-    from importlib import metadata
-else:
-    import importlib_metadata as metadata
+from importlib import metadata
+from typing import Any
 
 try:
     __version__ = metadata.version("vcf-merger")
@@ -28,16 +25,16 @@ except metadata.PackageNotFoundError:
     __version__ = "0.0.0-dev"
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(message)s')
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
 
 
 class VCFMerger:
     """A class to handle VCF contact file merging and deduplication."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the VCF merger."""
-        self.merged_contacts_data: Dict[Tuple, Dict[str, Any]] = {}
+        self.merged_contacts_data: dict[tuple, dict[str, Any]] = {}
 
     @staticmethod
     def normalize_phone(phone: str) -> str:
@@ -50,7 +47,7 @@ class VCFMerger:
         Returns:
             Normalized phone number string
         """
-        return re.sub(r'[^0-9+]', '', phone)
+        return re.sub(r"[^0-9+]", "", phone)
 
     @staticmethod
     def normalize_email(email: str) -> str:
@@ -65,7 +62,7 @@ class VCFMerger:
         """
         return email.lower()
 
-    def parse_vcard_properties(self, vcard_block: str) -> Dict[str, Any]:
+    def parse_vcard_properties(self, vcard_block: str) -> dict[str, Any]:
         """
         Parse a single VCARD block and extract its properties into a dictionary.
 
@@ -77,22 +74,22 @@ class VCFMerger:
         Returns:
             Dictionary containing parsed contact properties
         """
-        contact_props = {
-            'FN': None,
-            'N': None,
-            'TEL': set(),  # Stores (normalized_phone, original_line)
-            'EMAIL': set(),  # Stores (normalized_email, original_line)
-            'URL': set(),
-            'ADR': set(),
-            'ORG': None,
-            'TITLE': None,
-            'PHOTO': None,
-            'VERSION': None,
-            'OTHER_PROPS': set()  # Stores other unique property lines
+        contact_props: dict[str, Any] = {
+            "FN": None,
+            "N": None,
+            "TEL": set(),  # Stores (normalized_phone, original_line)
+            "EMAIL": set(),  # Stores (normalized_email, original_line)
+            "URL": set(),
+            "ADR": set(),
+            "ORG": None,
+            "TITLE": None,
+            "PHOTO": None,
+            "VERSION": None,
+            "OTHER_PROPS": set(),  # Stores other unique property lines
         }
 
         # Unfold lines
-        unfolded_block = re.sub(r'\r?\n[ \t]', '', vcard_block)
+        unfolded_block = re.sub(r"\r?\n[ \t]", "", vcard_block)
 
         photo_lines = []
         in_photo_block = False
@@ -101,42 +98,43 @@ class VCFMerger:
             if not line.strip():
                 continue
 
-            if line.startswith('PHOTO;'):
+            if line.startswith("PHOTO;"):
                 in_photo_block = True
                 photo_lines.append(line)
                 continue
 
-            if in_photo_block and (line.startswith(' ') or line.startswith('\t')):
+            if in_photo_block and (line.startswith(" ") or line.startswith("\t")):
                 photo_lines.append(line)
                 continue
 
             if in_photo_block:  # End of photo block
                 in_photo_block = False
 
-            parts = line.split(':', 1)
+            parts = line.split(":", 1)
             if len(parts) != 2:
-                contact_props['OTHER_PROPS'].add(line)
+                contact_props["OTHER_PROPS"].add(line)
                 continue
 
             key_part, value = parts
-            main_key = key_part.split(';')[0]
+            main_key = key_part.split(";")[0]
 
             # Decode quoted-printable if present
-            if 'ENCODING=QUOTED-PRINTABLE' in key_part:
+            if "ENCODING=QUOTED-PRINTABLE" in key_part:
                 try:
-                    value = quopri.decodestring(value).decode('utf-8', 'ignore')
+                    value = quopri.decodestring(value).decode("utf-8", "ignore")
                 except (TypeError, ValueError):
                     pass  # Keep original value if decoding fails
 
             self._process_property(contact_props, main_key, value, line)
 
         if photo_lines:
-            contact_props['PHOTO'] = '\n'.join(photo_lines)
+            contact_props["PHOTO"] = "\n".join(photo_lines)
 
         return contact_props
 
-    def _process_property(self, contact_props: Dict[str, Any], main_key: str,
-                         value: str, line: str) -> None:
+    def _process_property(
+        self, contact_props: dict[str, Any], main_key: str, value: str, line: str
+    ) -> None:
         """
         Process a single vCard property and add it to the contact properties.
 
@@ -146,28 +144,30 @@ class VCFMerger:
             value: The property value
             line: The original line for preservation
         """
-        if main_key == 'FN':
-            contact_props['FN'] = value.strip()
-        elif main_key == 'N':
-            contact_props['N'] = value.strip()
-        elif main_key == 'TEL':
-            contact_props['TEL'].add((self.normalize_phone(value), line))
-        elif main_key == 'EMAIL':
-            contact_props['EMAIL'].add((self.normalize_email(value), line))
-        elif main_key == 'URL':
-            contact_props['URL'].add(line)
-        elif main_key == 'ADR':
-            contact_props['ADR'].add(line)
-        elif main_key == 'ORG':
-            contact_props['ORG'] = value.strip()
-        elif main_key == 'TITLE':
-            contact_props['TITLE'] = value.strip()
-        elif main_key == 'VERSION':
-            contact_props['VERSION'] = value.strip()
+        if main_key == "FN":
+            contact_props["FN"] = value.strip()
+        elif main_key == "N":
+            contact_props["N"] = value.strip()
+        elif main_key == "TEL":
+            contact_props["TEL"].add((self.normalize_phone(value), line))
+        elif main_key == "EMAIL":
+            contact_props["EMAIL"].add((self.normalize_email(value), line))
+        elif main_key == "URL":
+            contact_props["URL"].add(line)
+        elif main_key == "ADR":
+            contact_props["ADR"].add(line)
+        elif main_key == "ORG":
+            contact_props["ORG"] = value.strip()
+        elif main_key == "TITLE":
+            contact_props["TITLE"] = value.strip()
+        elif main_key == "VERSION":
+            contact_props["VERSION"] = value.strip()
+        elif main_key in ("BEGIN", "END"):
+            pass  # Ignore start/end markers to prevent duplication
         else:
-            contact_props['OTHER_PROPS'].add(line)
+            contact_props["OTHER_PROPS"].add(line)
 
-    def _get_contact_key(self, contact_props: Dict[str, Any]) -> Tuple:
+    def _get_contact_key(self, contact_props: dict[str, Any]) -> tuple:
         """
         Generate a unique key for a contact for duplicate detection.
 
@@ -177,13 +177,14 @@ class VCFMerger:
         Returns:
             Tuple representing unique contact key
         """
-        normalized_fn = (contact_props['FN'] or contact_props['N'] or '').lower()
-        normalized_tels = frozenset(item[0] for item in contact_props['TEL'])
-        normalized_emails = frozenset(item[0] for item in contact_props['EMAIL'])
+        normalized_fn = (contact_props["FN"] or contact_props["N"] or "").lower()
+        normalized_tels = frozenset(item[0] for item in contact_props["TEL"])
+        normalized_emails = frozenset(item[0] for item in contact_props["EMAIL"])
         return (normalized_fn, normalized_tels, normalized_emails)
 
-    def _merge_contact_properties(self, existing_props: Dict[str, Any],
-                                 new_props: Dict[str, Any]) -> None:
+    def _merge_contact_properties(
+        self, existing_props: dict[str, Any], new_props: dict[str, Any]
+    ) -> None:
         """
         Merge properties from a new contact into an existing one.
 
@@ -192,17 +193,17 @@ class VCFMerger:
             new_props: New contact properties to merge from
         """
         # Single-value fields: prioritize new_props
-        single_value_fields = ['FN', 'N', 'ORG', 'TITLE', 'PHOTO', 'VERSION']
+        single_value_fields = ["FN", "N", "ORG", "TITLE", "PHOTO", "VERSION"]
         for prop_name in single_value_fields:
             if new_props[prop_name]:
                 existing_props[prop_name] = new_props[prop_name]
 
         # Multi-value fields: combine sets
-        multi_value_fields = ['TEL', 'EMAIL', 'URL', 'ADR', 'OTHER_PROPS']
+        multi_value_fields = ["TEL", "EMAIL", "URL", "ADR", "OTHER_PROPS"]
         for field in multi_value_fields:
             existing_props[field].update(new_props[field])
 
-    def _generate_vcard_output(self, contact_props: Dict[str, Any]) -> str:
+    def _generate_vcard_output(self, contact_props: dict[str, Any]) -> str:
         """
         Generate a single VCARD string from contact properties.
 
@@ -212,45 +213,45 @@ class VCFMerger:
         Returns:
             Formatted vCard string
         """
-        vcard_lines = ['BEGIN:VCARD']
-        vcard_lines.append('VERSION:3.0')  # Standardize to VCF 3.0
+        vcard_lines = ["BEGIN:VCARD"]
+        vcard_lines.append("VERSION:3.0")  # Standardize to VCF 3.0
 
-        if contact_props['FN']:
+        if contact_props["FN"]:
             vcard_lines.append(f"FN:{contact_props['FN']}")
 
-        if contact_props['N']:
+        if contact_props["N"]:
             vcard_lines.append(f"N:{contact_props['N']}")
-        elif contact_props['FN']:
+        elif contact_props["FN"]:
             vcard_lines.append(f"N:;{contact_props['FN']};;;")
 
-        if contact_props['ORG']:
+        if contact_props["ORG"]:
             vcard_lines.append(f"ORG:{contact_props['ORG']}")
-        if contact_props['TITLE']:
+        if contact_props["TITLE"]:
             vcard_lines.append(f"TITLE:{contact_props['TITLE']}")
 
         # Add phone numbers
-        for _, original_line in sorted(contact_props['TEL']):
+        for _, original_line in sorted(contact_props["TEL"]):
             vcard_lines.append(original_line)
 
         # Add email addresses
-        for _, original_line in sorted(contact_props['EMAIL']):
+        for _, original_line in sorted(contact_props["EMAIL"]):
             vcard_lines.append(original_line)
 
         # Add other multi-value properties
-        for line in sorted(contact_props['URL']):
+        for line in sorted(contact_props["URL"]):
             vcard_lines.append(line)
-        for line in sorted(contact_props['ADR']):
+        for line in sorted(contact_props["ADR"]):
             vcard_lines.append(line)
-        for line in sorted(contact_props['OTHER_PROPS']):
+        for line in sorted(contact_props["OTHER_PROPS"]):
             vcard_lines.append(line)
 
-        if contact_props['PHOTO']:
-            vcard_lines.append(contact_props['PHOTO'])
+        if contact_props["PHOTO"]:
+            vcard_lines.append(contact_props["PHOTO"])
 
-        vcard_lines.append('END:VCARD')
-        return '\n'.join(vcard_lines)
+        vcard_lines.append("END:VCARD")
+        return "\n".join(vcard_lines)
 
-    def merge_vcfs(self, vcf_contents_list: List[str]) -> str:
+    def merge_vcfs(self, vcf_contents_list: list[str]) -> str:
         """
         Merge contacts from a list of VCF content strings.
 
@@ -269,7 +270,7 @@ class VCFMerger:
         for i, vcf_content in enumerate(vcf_contents_list):
             file_info = f"Processing input file {i+1}/{len(vcf_contents_list)}"
             logger.info("\n[INFO] %s...", file_info)
-            pattern = r'BEGIN:VCARD.*?END:VCARD'
+            pattern = r"BEGIN:VCARD.*?END:VCARD"
             vcard_blocks = re.findall(pattern, vcf_content, re.DOTALL)
 
             for block in vcard_blocks:
@@ -283,14 +284,20 @@ class VCFMerger:
                 else:
                     existing_contact_props = self.merged_contacts_data[contact_key]
 
-                    logger.info("  [DUPLICATE DETECTED] Contact '%s' found. "
-                                "Merging properties.", contact_name)
+                    logger.info(
+                        "  [DUPLICATE DETECTED] Contact '%s' found. "
+                        "Merging properties.",
+                        contact_name,
+                    )
 
-                    self._merge_contact_properties(existing_contact_props,
-                                                  current_contact_props)
+                    self._merge_contact_properties(
+                        existing_contact_props, current_contact_props
+                    )
 
-                    logger.info("  [MERGED] Properties for '%s' have been combined.",
-                                contact_name)
+                    logger.info(
+                        "  [MERGED] Properties for '%s' have been combined.",
+                        contact_name,
+                    )
 
         logger.info("\n--- VCF Merge Process Complete ---")
 
@@ -299,9 +306,9 @@ class VCFMerger:
             contact_props = self.merged_contacts_data[contact_key]
             final_vcf_output.append(self._generate_vcard_output(contact_props))
 
-        return '\n'.join(final_vcf_output)
+        return "\n".join(final_vcf_output)
 
-    def _get_contact_display_name(self, contact_props: Dict[str, Any]) -> str:
+    def _get_contact_display_name(self, contact_props: dict[str, Any]) -> str:
         """
         Get a display name for the contact for logging purposes.
 
@@ -311,12 +318,14 @@ class VCFMerger:
         Returns:
             Display name string
         """
-        return (contact_props['FN'] or
-                self._get_contact_key(contact_props)[0] or
-                'Unknown Contact')
+        return (
+            contact_props["FN"]
+            or self._get_contact_key(contact_props)[0]
+            or "Unknown Contact"
+        )
 
 
-def read_vcf_files(file_paths: List[str]) -> List[str]:
+def read_vcf_files(file_paths: list[str]) -> list[str]:
     """
     Read VCF files and return their contents.
 
@@ -329,13 +338,14 @@ def read_vcf_files(file_paths: List[str]) -> List[str]:
     vcf_contents = []
     for path in file_paths:
         try:
-            with open(path, 'r', encoding='utf-8', errors='ignore') as file:
+            with open(path, encoding="utf-8", errors="ignore") as file:
                 vcf_contents.append(file.read())
         except FileNotFoundError:
             logger.error("Error: Input file '%s' not found. Skipping this file.", path)
-        except IOError as error:
-            logger.error("Error reading file '%s': %s. "
-                         "Skipping this file.", path, error)
+        except OSError as error:
+            logger.error(
+                "Error reading file '%s': %s. Skipping this file.", path, error
+            )
 
     return vcf_contents
 
@@ -352,16 +362,17 @@ def write_output_file(output_path: str, content: str) -> bool:
         True if successful, False otherwise
     """
     try:
-        with open(output_path, 'w', encoding='utf-8') as file:
+        with open(output_path, "w", encoding="utf-8") as file:
             file.write(content)
         logger.info("\nSuccessfully merged contacts into '%s'", output_path)
         return True
-    except IOError as error:
+    except OSError as error:
         logger.error("An IOError occurred while writing the output file: %s", error)
         return False
     except Exception as error:  # pylint: disable=broad-except
-        logger.error("An unexpected error occurred while writing the output file: %s",
-                     error)
+        logger.error(
+            "An unexpected error occurred while writing the output file: %s", error
+        )
         return False
 
 
@@ -371,24 +382,13 @@ def main() -> None:
         description="Merge and deduplicate VCF contact files."
     )
 
+    parser.add_argument("output_file", help="Path to the output VCF file")
+    parser.add_argument("input_files", nargs="+", help="Paths to input VCF files")
     parser.add_argument(
-        "output_file",
-        help="Path to the output VCF file"
+        "-v", "--verbose", action="store_true", help="Enable verbose output"
     )
     parser.add_argument(
-        "input_files",
-        nargs="+",
-        help="Paths to input VCF files"
-    )
-    parser.add_argument(
-        "-v", "--verbose",
-        action="store_true",
-        help="Enable verbose output"
-    )
-    parser.add_argument(
-        "--version",
-        action="version",
-        version=f"%(prog)s {__version__}"
+        "--version", action="version", version=f"%(prog)s {__version__}"
     )
 
     args = parser.parse_args()
@@ -415,5 +415,5 @@ def main() -> None:
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
