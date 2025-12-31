@@ -21,12 +21,13 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v6
       with:
-        python-version: '3.8'
+        python-version: '3.11'
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pyinstaller
+        pip install pyinstaller setuptools_scm
+        pip install .
 
     - name: Determine binary name
       id: binary_name
@@ -62,7 +63,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v6
       with:
-        python-version: '3.8'
+        python-version: '3.11'
     - name: Install build tools
       run: pip install build
     - name: Build package
